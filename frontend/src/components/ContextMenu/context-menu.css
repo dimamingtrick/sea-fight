@@ -1,0 +1,28 @@
+.contextMenu {
+  width: 120px;
+  box-shadow: 0 4px 5px 3px rgba(0, 0, 0, 0.2);
+  position: fixed;
+  z-index: 1000;
+  background: rgba(255,255,255,.98);
+  border-radius: 3px;
+}
+
+.contextMenu .menu-options {
+  list-style: none;
+  padding: 0;
+}
+
+.contextMenu .menu-options .menu-option {
+  font-weight: 500;
+  font-size: 14px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.contextMenu .menu-options .menu-option:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+div.single-chat-display {
+  position: relative!important;
+}

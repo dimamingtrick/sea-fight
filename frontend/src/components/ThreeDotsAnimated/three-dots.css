@@ -1,0 +1,35 @@
+span.threedots {
+  display: inline-flex;
+}
+span.threedots span {
+  width: 3px;
+  height: 3px;
+  background: #fff;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+span.threedots span:nth-child(1) {
+  animation: fadeFirst 1s ease-in-out infinite;
+}
+@keyframes fadeFirst {
+  33% { opacity: 1 }   
+  66% { opacity: .15 }   
+  99% { opacity: 1 }   
+}
+span.threedots span:nth-child(2) {
+  animation: fadeSecond 1s ease-in-out infinite;
+}
+@keyframes fadeSecond {
+  66% { opacity: .15 }     
+  66% { opacity: 1 }   
+  66% { opacity: .15 }   
+}
+span.threedots span:nth-child(3) {
+  animation: fadeThird 1s ease-in-out infinite;
+}
+@keyframes fadeThird {
+  33% { opacity: 1 }   
+  66% { opacity: .15 }   
+  99% { opacity: 1 }    
+}
