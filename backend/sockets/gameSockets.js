@@ -1,15 +1,12 @@
-module.exports = (socket, io) => {
-  /**
-   * Detect when admin enter game
-   */
-  socket.on("adminEnterGame", () => {
-    io.emit("adminIsInTheGame");
-  });
+let users = [{ nickname: "test" }];
 
+const gameSocket = (socket, io) => {
   /**
-   * Detect when admin leave game
+   * Detect user enters nickname and send request to start game
    */
-  socket.on("adminLeaveTheGame", () => {
-    io.emit("adminIsNotInTheGame");
+  socket.on("userIsOnline", nickname => {
+    users.push({ nickname, socketId: socket.id });
   });
 };
+
+module.exports = { users, gameSocket };

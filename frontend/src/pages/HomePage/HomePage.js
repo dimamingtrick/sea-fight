@@ -1,30 +1,25 @@
 import React from "react";
-// import { Switch, Route, Redirect } from "react-router-dom";
-// import { TransitionGroup, CSSTransition } from "react-transition-group";
-// import socketIOClient from "socket.io-client";
+import { Container, Row, Col, Button } from "reactstrap";
 
-// let socket = null;
-// const serverUrl = `${process.env.REACT_APP_SERVER}/`;
+const HomePage = ({ history }) => {
+  const enterDetails = () => history.push("/player-details");
 
-// const routes = [
-//   "/app",
-//   "/app/game",
-//   "/app/chats",
-//   "/app/todolist",
-//   "/app/game-words",
-//   "/app/profile",
-// ];
-// let routeKey; // Define key to have transition only between 3 routes, declared below inside switch
-// if (!socket && userId) {
-//   socket = socketIOClient(serverUrl);
-//   socket.on("socketWorks", ({ horray }) => {
-//     console.log(horray); // Check if socket works
-//     socket.emit("userIsOnline", userId);
-//   });
-// }
-
-const HomePage = () => {
-  return <div>Home Page</div>;
+  return (
+    <Container>
+      <Row>
+        <Col className="text-align-center" sm={{ size: 4, offset: 4 }}>
+          <h1>Welcome to sea fight</h1>
+        </Col>
+      </Row>
+      <Row>
+        <Col className="text-align-center" sm={{ size: 4, offset: 4 }}>
+          <Button color="link" onClick={enterDetails}>
+            Start Game
+          </Button>
+        </Col>
+      </Row>
+    </Container>
+  );
 };
 
 // export { socket };

@@ -1,13 +1,9 @@
-import connectDb from "./models";
-import express from "express";
-import cors from "cors";
+const express = require("express");
+const cors = require("cors");
 
 const app = express();
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
-
-/** Make uploads directory public */
-app.use(express.static(__dirname + "/uploads"));
 
 /** Add express body parser to convert request body params */
 app.use(express.json());
@@ -19,12 +15,6 @@ app.set("socketio", io);
 app.use(cors());
 
 /**
- * Add /game routes (settings, etc)
- * Require JWT token
- */
-app.use("/game", require("./routes/gameRoutes"));
-
-/**
  * GET /
  * Basic default route to initiate server
  */
@@ -33,16 +23,36 @@ app.get("/", async (req, res) => {
 });
 
 /**
- * Connecting to database
- * Then start node.js server
+ * POST /connect-to-game-request
+ * When user send nickname and want's to connect and start game
+ */
+app.post("/connect-to-game-request", async (req, res) => {
+  const { nickname } = req.body;
+
+  if (!nickname)
+    return res.status(400).json({ message: "You must enter nickname" });
+
+  const users = require("./sockets/gameSockets").users;
+
+  if (users.find(u => u.nickname === nickname))
+    return res
+      .status(400)
+      .json({ message: "Nickname is already exists. Select another one" });
+
+  return res.json({ message: "Success" });
+});
+
+/**
+ * Start node.js server
  * Then require all sockets from different modules
  */
-connectDb().then(() => {
-  server.listen(3001, function() {
-    io.on("connection", socket => {
-      app.set("socket", socket);
-      /** Use game sockets */
-      require("./sockets/gameSockets")(socket, io);
-    });
+server.listen(3001, function() {
+  io.on("connection", socket => {
+    socket.emit("socketWorks", { horray: "Horray" });
+
+    app.set("socket", socket);
+
+    /** Use game sockets */
+    require("./sockets/gameSockets").gameSocket(socket, io);
   });
 });

@@ -1,3 +1,11 @@
 import api from "./api";
 
-export { api };
+const connectToGameRequest = nickname => {
+  return api({
+    method: "POST",
+    url: "/connect-to-game-request",
+    body: { nickname }
+  })
+}
+
+export { connectToGameRequest };
