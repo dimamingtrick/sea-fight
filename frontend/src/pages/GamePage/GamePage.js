@@ -32,6 +32,33 @@ const gameAreaCols = [
   { id: 10 },
 ];
 
+const yourShips = [
+  { id: 1 },
+  { id: 2 },
+  { id: 3 },
+  { id: 4 },
+  { id: 5 },
+  { id: 6 },
+  { id: 7 },
+  { id: 8 },
+  { id: 9 },
+  { id: 10 },
+];
+
+function getCoords(elem) {
+  const box = elem.getBoundingClientRect();
+  return {
+    top: box.top,
+    left: box.left,
+  };
+}
+
+let elemIsDragging = false;
+let draggingOverArea = false;
+let lastHoveredItem = null;
+/**
+ * GAME COMPONENT
+ */
 const GamePage = ({ history, location }) => {
   const [nickname] = useState(
     localStorage.getItem("nickname")
@@ -67,14 +94,56 @@ const GamePage = ({ history, location }) => {
     }
   };
 
-  // const removeShip = blockId => {
-  //   console.log(blockId);
-  //   setShips(ships.filter(i => i.id !== blockId));
-  // };
+  const dragShip = e => {
+    elemIsDragging = true;
+    const ship = e.target;
+    const coords = getCoords(ship);
+    const shiftX = e.pageX - coords.left;
+    const shiftY = e.pageY - coords.top;
+
+    ship.style.position = "absolute";
+    ship.style.zIndex = 1000;
+    ship.style.pointerEvents = "none";
+
+    function moveAt(e) {
+      ship.style.left = e.pageX - shiftX + "px";
+      ship.style.top = e.pageY - shiftY + "px";
+    }
+
+    moveAt(e);
+
+    document.onmousemove = e => {
+      if (e.target.className === "area-col") {
+        lastHoveredItem = e.target;
+      } else {
+        if (lastHoveredItem) lastHoveredItem = null;
+      }
+      moveAt(e);
+    };
+
+    document.onmouseup = e => {
+      elemIsDragging = false;
+      document.onmousemove = null;
+      document.onmouseup = null;
+      ship.style.pointerEvents = "auto";
+      if (draggingOverArea && lastHoveredItem) {
+        draggingOverArea = false;
+        const shipRemove = document.getElementById(ship.id);
+        shipRemove.parentNode.removeChild(shipRemove);
+        setShips([...ships, { blockId: lastHoveredItem.id, shipId: ship.id }]);
+      }
+    };
+  };
+
+  const mouseOverArea = () => {
+    if (elemIsDragging && !draggingOverArea) {
+      draggingOverArea = true;
+    }
+  };
 
   return (
     <Container>
-      <div className="game-area">
+      <div id="gameArea" className="game-area" onMouseMove={mouseOverArea}>
         {gameAreaRows.map((row, rowIndex) => {
           return (
             <div key={row.id} className="area-row">
@@ -91,7 +160,9 @@ const GamePage = ({ history, location }) => {
                   >
                     {ships.find(i => i.blockId === blockId) && (
                       <div
-                        // onClick={() => removeShip(blockId)}
+                        id={ships.find(i => i.blockId === blockId).shipId}
+                        onDragStart={() => false}
+                        onMouseDown={dragShip}
                         className="ship"
                       />
                     )}
@@ -107,6 +178,17 @@ const GamePage = ({ history, location }) => {
           );
         })}
       </div>
+      <Row className="ships-row" id="shipsRow">
+        {yourShips.map(i => (
+          <div
+            onDragStart={() => false}
+            onMouseDown={dragShip}
+            key={i.id}
+            id={i.id + "ship"}
+            className="ship"
+          />
+        ))}
+      </Row>
       <Row>Nickname - {nickname}</Row>
       <Row>Last clicked element id - {lastClickedElement}</Row>
       <Row>
