@@ -53,7 +53,8 @@ const gameSocket = (socket, io) => {
         users: [
           {
             user: users.find(i => i && i.socketId === socket.id),
-            ships: []
+            ships: [],
+            attacks: false
           }
         ]
       };
@@ -73,18 +74,20 @@ const gameSocket = (socket, io) => {
     }
   });
 
-  socket.on("readyForAGame", gameId => {
+  socket.on("readyForAGame", ({ gameId, ships }) => {
     const game = games.find(g => g.id === gameId);
 
     game.users = game.users.map(u => {
       if (u.user.socketId === socket.id) {
         u.user.isReady = true;
+        u.ships = ships;
       }
       return u;
     });
 
     if (game.users.every(u => u.user.isReady)) {
       game.isStarted = true;
+      game.users[0].attacks = true;
       game.users.forEach(({ user }) => {
         io.to(`${user.socketId}`).emit("gameStarted", game);
       });

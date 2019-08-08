@@ -27,11 +27,11 @@ const GamePage = ({ history, location }) => {
   const [ships, setShips] = useState([]);
   const [enemyShips, setEnemyShips] = useState([]);
   const [maxShips, setMaxShips] = useState(10);
-  const [maxShipsWarning, setMaxShipsWarning] = useState(false);
+  const [warningAlert, setWarningAlert] = useState("");
   const [isReadyStatus, setIsReadyStatus] = useState({
     my: false,
     enemy: false
-  }); //
+  });
 
   useEffect(() => {
     if (nickname) {
@@ -52,18 +52,17 @@ const GamePage = ({ history, location }) => {
   }, [ships]);
 
   useEffect(() => {
-    if (maxShipsWarning) {
+    if (warningAlert) {
       warningTimeout = setTimeout(() => {
-        if (maxShipsWarning) setMaxShipsWarning(false);
+        if (warningAlert) setWarningAlert("");
       }, 2000);
     } else {
       clearTimeout(warningTimeout);
     }
-  }, [maxShipsWarning]);
+  }, [warningAlert]);
 
   useEffect(() => {
     socket.on("gameSearchComplete", gameData => {
-      console.log(gameData);
       setGameIsSearching(false);
       setGameData(gameData);
     });
@@ -74,23 +73,29 @@ const GamePage = ({ history, location }) => {
       });
     });
     socket.on("gameStarted", gameData => {
+      console.log(gameData);
       setGameData(gameData);
     });
     return () => {
-      socket.off("gameSearchComplete"); //
-      socket.off("enemyIsReady"); //
+      socket.off("gameSearchComplete");
+      socket.off("enemyIsReady");
+      socket.off("gameStarted");
     };
   });
 
   const handleBlockClick = (blockId, area = "my") => {
     if (area === "my") {
+      if (gameData.isStarted) return;
+
       if (ships.find(i => i.blockId === blockId)) {
         setShips(ships.filter(i => i.blockId !== blockId));
       } else {
         if (maxShips !== 0) setShips([...ships, { blockId }]);
-        else setMaxShipsWarning(true);
+        else setWarningAlert("You've already set all ships to fight area!");
       }
     } else {
+      if (!gameData.isStarted) return;
+
       if (enemyShips.find(i => i.blockId === blockId)) {
         setEnemyShips(enemyShips.filter(i => i.blockId !== blockId));
       } else {
@@ -100,7 +105,11 @@ const GamePage = ({ history, location }) => {
   };
 
   const handleReadyForAGame = () => {
-    socket.emit("readyForAGame", gameData.id);
+    if (ships.length < 10) {
+      return setWarningAlert("You must add 10 ships to start the game");
+    }
+
+    socket.emit("readyForAGame", { gameId: gameData.id, ships });
     setIsReadyStatus({
       my: true,
       enemy: isReadyStatus.enemy
@@ -217,10 +226,10 @@ const GamePage = ({ history, location }) => {
         </Row>
         <Alert
           className="ships-warning-alert"
-          isOpen={maxShipsWarning}
+          isOpen={warningAlert !== ""}
           color="danger"
         >
-          You've already set all ships to fight area!
+          {warningAlert}
         </Alert>
       </Container>
     </>
