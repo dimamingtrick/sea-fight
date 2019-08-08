@@ -37,7 +37,6 @@ const GamePage = ({ history, location }) => {
     if (nickname) {
       socket = socketIOClient(serverUrl);
       socket.on("socketWorks", ({ horray }) => {
-        console.log(horray);
         socket.emit("userIsOnline", nickname);
         setSocketStatus(true);
         socket.emit("search-game");
@@ -73,13 +72,43 @@ const GamePage = ({ history, location }) => {
       });
     });
     socket.on("gameStarted", gameData => {
-      console.log(gameData);
+      setGameData(gameData);
+    });
+    socket.on(
+      "shipWasShooted",
+      ({ shootedShip, shooter, gameWinner = null }) => {
+        console.log("GAME WINNER", gameWinner);
+        if (shooter.nickname === nickname) {
+          setEnemyShips([...enemyShips, shootedShip]);
+        } else {
+          const updatedShips = ships.map(s => {
+            if (s.blockId === shootedShip.blockId) s = shootedShip;
+            return s;
+          });
+          setShips(updatedShips);
+        }
+
+        if (gameWinner) {
+          setGameData({
+            ...gameData,
+            isComplete: true,
+            winner: gameWinner.user
+          });
+        }
+      }
+    );
+    socket.on("shotMissed", ({ gameData, blockId, shooter }) => {
+      if (shooter.nickname === nickname) {
+        setEnemyShips([...enemyShips, { blockId }]);
+      }
       setGameData(gameData);
     });
     return () => {
       socket.off("gameSearchComplete");
       socket.off("enemyIsReady");
       socket.off("gameStarted");
+      socket.off("shipWasShooted");
+      socket.off("shotMissed");
     };
   });
 
@@ -96,18 +125,21 @@ const GamePage = ({ history, location }) => {
     } else {
       if (!gameData.isStarted) return;
 
-      if (enemyShips.find(i => i.blockId === blockId)) {
-        setEnemyShips(enemyShips.filter(i => i.blockId !== blockId));
-      } else {
-        setEnemyShips([...enemyShips, { blockId }]);
+      const { user } = gameData.users.find(u => u.attacks);
+      if (user.nickname === nickname) {
+        if (enemyShips.find(i => i.blockId === blockId)) {
+          setEnemyShips(enemyShips.filter(i => i.blockId !== blockId));
+        } else {
+          socket.emit("setAttack", { gameId: gameData.id, blockId });
+          // setEnemyShips([...enemyShips, { blockId }]);
+        }
       }
     }
   };
 
   const handleReadyForAGame = () => {
-    if (ships.length < 10) {
+    if (ships.length < 10)
       return setWarningAlert("You must add 10 ships to start the game");
-    }
 
     socket.emit("readyForAGame", { gameId: gameData.id, ships });
     setIsReadyStatus({
@@ -115,13 +147,18 @@ const GamePage = ({ history, location }) => {
       enemy: isReadyStatus.enemy
     });
   };
-
+  console.log(gameData);
   return (
     <>
       <GameSearchPreloader
         show={
           gameIsSearching ||
           (isReadyStatus.my && gameData && !gameData.isStarted)
+        }
+        text={
+          isReadyStatus.my && gameData && !gameData.isStarted
+            ? "Waiting for other member to be ready..."
+            : "Searching for a game..."
         }
       />
       <Container>
@@ -161,7 +198,13 @@ const GamePage = ({ history, location }) => {
                             <div
                               id={ships.find(i => i.blockId === blockId).shipId}
                               onDragStart={() => false}
-                              className="ship"
+                              className={`ship my-ship ${
+                                ships.find(
+                                  i => i.blockId === blockId && i.isShooted
+                                )
+                                  ? "shooted"
+                                  : ""
+                              }`}
                             />
                           )}
                           {rowIndex === 0 && (
@@ -201,7 +244,13 @@ const GamePage = ({ history, location }) => {
                                   .shipId
                               }
                               onDragStart={() => false}
-                              className="ship"
+                              className={`ship enemy-ship ${
+                                enemyShips.find(
+                                  i => i.blockId === blockId && i.isShooted
+                                )
+                                  ? "shooted"
+                                  : ""
+                              }`}
                             />
                           )}
                           {rowIndex === 0 && (
@@ -231,6 +280,16 @@ const GamePage = ({ history, location }) => {
         >
           {warningAlert}
         </Alert>
+        {gameData && (
+          <Alert
+            className="ships-warning-alert"
+            isOpen={gameData && gameData.isComplete && gameData.winner !== null}
+            color="success"
+          >
+            Game is over! The winner is
+            {gameData.winner && gameData.winner.nickname}!
+          </Alert>
+        )}
       </Container>
     </>
   );

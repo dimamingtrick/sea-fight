@@ -44,7 +44,8 @@ const gameSocket = (socket, io) => {
       const me = users.find(i => i.socketId === socket.id);
       newGame.users.push({
         user: me,
-        ships: []
+        ships: [],
+        attacks: false
       });
     } else {
       newGame = {
@@ -54,9 +55,11 @@ const gameSocket = (socket, io) => {
           {
             user: users.find(i => i && i.socketId === socket.id),
             ships: [],
-            attacks: false
+            attacks: true
           }
-        ]
+        ],
+        isComplete: false,
+        winner: null
       };
       games.push(newGame);
     }
@@ -74,26 +77,79 @@ const gameSocket = (socket, io) => {
     }
   });
 
+  /**
+   * When user is ready for a game and set all ships
+   * If both users are ready - game actually begins
+   */
   socket.on("readyForAGame", ({ gameId, ships }) => {
     const game = games.find(g => g.id === gameId);
 
     game.users = game.users.map(u => {
       if (u.user.socketId === socket.id) {
         u.user.isReady = true;
-        u.ships = ships;
+        u.ships = ships.map(s => {
+          s.isShooted = false;
+          return s;
+        });
       }
       return u;
     });
 
     if (game.users.every(u => u.user.isReady)) {
       game.isStarted = true;
-      game.users[0].attacks = true;
       game.users.forEach(({ user }) => {
         io.to(`${user.socketId}`).emit("gameStarted", game);
       });
     } else {
       const enemy = game.users.find(u => u.user.socketId !== socket.id);
       io.to(`${enemy.user.socketId}`).emit("enemyIsReady");
+    }
+  });
+
+  /**
+   * When user attacks enemy area
+   */
+  socket.on("setAttack", ({ gameId, blockId }) => {
+    const game = games.find(g => g.id === gameId);
+
+    const shooter = game.users.find(({ user }) => user.socketId === socket.id);
+    const enemy = game.users.find(({ user }) => user.socketId !== socket.id);
+
+    const shootedShip = enemy.ships.find(s => s.blockId === blockId);
+    if (shootedShip) {
+      game.users = game.users.map(u => {
+        u.ships = u.ships.map(s => {
+          if (s.blockId === blockId) {
+            s.isShooted = true;
+          }
+          return s;
+        });
+        return u;
+      });
+
+      const gameWinner = game.users.find(u => u.ships.every(s => s.isShooted));
+
+      game.users.forEach(({ user }) => {
+        io.to(`${user.socketId}`).emit("shipWasShooted", {
+          shootedShip,
+          shooter: shooter.user,
+          ...(gameWinner ? { gameIsOver: true, gameWinner } : {})
+        });
+      });
+    } else {
+      game.users = game.users.map(u => {
+        if (u.attacks) u.attacks = false;
+        else u.attacks = true;
+        return u;
+      });
+
+      game.users.forEach(({ user }) => {
+        io.to(`${user.socketId}`).emit("shotMissed", {
+          gameData: game,
+          blockId,
+          shooter: shooter.user
+        });
+      });
     }
   });
 };

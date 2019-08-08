@@ -3,7 +3,7 @@ import { CSSTransition } from "react-transition-group";
 
 import "./game-search-preloader.scss";
 
-const GameSearchPreloader = ({ show }) => (
+const GameSearchPreloader = ({ show, text }) => (
   <CSSTransition in={show} timeout={500} classNames="fadeInOut" unmountOnExit>
     <div className="game-preloader">
       <div className="black-bg" />
@@ -25,7 +25,7 @@ const GameSearchPreloader = ({ show }) => (
             <div className="wInnerBall" />
           </div>
         </div>
-        <span>Searching for a game</span>
+        <span>{text}</span>
       </div>
     </div>
   </CSSTransition>
