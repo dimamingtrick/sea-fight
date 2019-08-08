@@ -11,12 +11,14 @@
   position: absolute;
   left: -20px;
   pointer-events: none;
+  user-select: none;
 }
 
 .area-col-name {
   position: absolute;
   top: -25px;
   pointer-events: none;
+  user-select: none;
 }
 
 .area-row {
@@ -46,7 +48,6 @@
   width: 100%;
   height: 100%;
   z-index: 1000;
-  // transition: all .2s;
 }
 
 .ships-row {
@@ -61,5 +62,20 @@
     min-width: 25px;
     min-height: 25px;
     width: auto;
+  }
+}
+
+.alert.ships-warning-alert {
+  position: fixed;
+  right: 25px;
+  top: 25px;
+}
+
+.game-buttons {
+  margin-bottom: 50px;
+
+  & > div {
+    display: flex;
+    justify-content: center;
   }
 }
