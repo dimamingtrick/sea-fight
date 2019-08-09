@@ -62,7 +62,6 @@
   position: relative;
   transition: all .25s;
   cursor: pointer;
-  overflow: hidden;
 
   &:hover {
     background: rgba(0,0,0,.1);
@@ -80,7 +79,7 @@
   height: 100%;
   z-index: 1000;
   transition: all .25s;
-  
+
   &.missed-shot {
     background: #c3bcbc!important;
     
