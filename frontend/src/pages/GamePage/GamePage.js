@@ -67,7 +67,17 @@ const GamePage = ({ history, location }) => {
       setGameData(gameData);
     });
     socket.on("enemyDisconnects", () => {
-      console.log("DISCONNECT FUCKING ENEMY");
+      console.log("ddwsKdINsY");
+      setGameIsSearching(true);
+      setGameData(null);
+      setShips([]);
+      setEnemyShips([]);
+      setMaxShips(10);
+      setIsReadyStatus({
+        my: false,
+        enemy: false
+      });
+      socket.emit("search-game", nickname);
     });
     socket.on("enemyIsReady", () => {
       setIsReadyStatus({

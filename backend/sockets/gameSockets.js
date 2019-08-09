@@ -40,21 +40,20 @@ const gameSocket = (socket, io) => {
    */
   socket.on("disconnect", () => {
     users = users.filter(i => i.socketId !== socket.id);
-    // const userGame = games.find(
-    //   g => g && g.users && g.users.find(u => u.socketId === socket.id)
-    // );
-    // console.log("----------USERGAME-----------", userGame);
-    // if (userGame) {
-    //   games = games.filter(g => g.id !== userGame.game);
-    //   console.log("----------GAMES-----------", games);
+    const userGame = games.find(
+      g =>
+        g && g.users && g.users.find(({ user }) => user.socketId === socket.id)
+    );
 
-    //   const enemy = userGame.users.find(u => u.socketId !== socket.id);
-    //   console.log("----------ENEMY-----------", enemy);
+    if (userGame) {
+      const enemy = userGame.users.find(
+        ({ user }) => user.socketId !== socket.id
+      );
 
-    //   if (enemy) {
-    //     io.to(`${enemy.socketId}`).emit("enemyDisconnects");
-    //   }
-    // }
+      if (enemy) {
+        io.to(`${enemy.user.socketId}`).emit("enemyDisconnects");
+      }
+    }
   });
 
   /**
@@ -62,11 +61,19 @@ const gameSocket = (socket, io) => {
    */
   socket.on("search-game", nickname => {
     users = users.map(u => {
-      if (u.nickname === nickname) {
+      if (
+        u.nickname === nickname &&
+        !u.isSearching &&
+        u.socketId === socket.id
+      ) {
         u.isSearching = true;
       }
       return u;
     });
+    console.log(
+      "###########################################################",
+      users
+    );
 
     const enemy = users.find(
       u => u && u.nickname !== nickname && u.isSearching
