@@ -106,7 +106,7 @@ const GamePage = ({ history, location }) => {
       } else {
         setShips([...ships, { blockId, isMissed: true }]);
       }
-      setGameData(gameData); //sadasdasdas
+      setGameData(gameData);
     });
     return () => {
       socket.off("gameSearchComplete");

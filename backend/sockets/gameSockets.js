@@ -19,11 +19,19 @@ const gameSocket = (socket, io) => {
    */
   socket.on("userIsOnline", nickname => {
     if (nickname) {
+      // const userExists = users.find(u => u.nickname === nickname);
+
+      // if (userExists) {
+      //   users = users.filter(u => u.nickname !== nickname);
+      // }
+
+      users = users.filter(u => u.nickname !== nickname);
+
       const newUser = new User({
         nickname,
         socketId: socket.id
       });
-      users.push(newUser);
+      users = [...users, newUser];
     }
   });
 
@@ -32,23 +40,47 @@ const gameSocket = (socket, io) => {
    */
   socket.on("disconnect", () => {
     users = users.filter(i => i.socketId !== socket.id);
+    // const userGame = games.find(
+    //   g => g && g.users && g.users.find(u => u.socketId === socket.id)
+    // );
+    // console.log("----------USERGAME-----------", userGame);
+    // if (userGame) {
+    //   games = games.filter(g => g.id !== userGame.game);
+    //   console.log("----------GAMES-----------", games);
+
+    //   const enemy = userGame.users.find(u => u.socketId !== socket.id);
+    //   console.log("----------ENEMY-----------", enemy);
+
+    //   if (enemy) {
+    //     io.to(`${enemy.socketId}`).emit("enemyDisconnects");
+    //   }
+    // }
   });
 
   /**
    * User searching for a game
    */
-  socket.on("search-game", () => {
-    let newGame = games.find(i => i && i.users && i.users.length === 1);
+  socket.on("search-game", nickname => {
+    users = users.map(u => {
+      if (u.nickname === nickname) {
+        u.isSearching = true;
+      }
+      return u;
+    });
 
-    if (newGame) {
-      const me = users.find(i => i.socketId === socket.id);
-      newGame.users.push({
-        user: me,
-        ships: [],
-        attacks: false
+    const enemy = users.find(
+      u => u && u.nickname !== nickname && u.isSearching
+    );
+
+    if (enemy) {
+      users = users.map(i => {
+        if (i.socketId === socket.id || i.socketId === enemy.socketId) {
+          i.isSearching = false;
+        }
+        return i;
       });
-    } else {
-      newGame = {
+
+      let newGame = {
         id: uniqid(),
         isStarted: false,
         users: [
@@ -56,21 +88,18 @@ const gameSocket = (socket, io) => {
             user: users.find(i => i && i.socketId === socket.id),
             ships: [],
             attacks: true
+          },
+          {
+            user: enemy,
+            ships: [],
+            attacks: false
           }
         ],
         isComplete: false,
         winner: null
       };
       games.push(newGame);
-    }
 
-    users = users.map(i => {
-      if (i.socketId === socket.id) {
-        i.isSearching = false;
-      }
-      return i;
-    });
-    if (newGame.users.length === 2) {
       newGame.users.forEach(u => {
         io.to(`${u.user.socketId}`).emit("gameSearchComplete", newGame);
       });
