@@ -3,6 +3,7 @@ import { Container, Row, Col, Alert, Button } from "reactstrap";
 import socketIOClient from "socket.io-client";
 
 import GameSearchPreloader from "../../components/GameSearchPreloader/GameSearchPreloader";
+import Ship from "../../components/Ship/Ship";
 import { gameAreaRows, gameAreaCols } from "../../helpers";
 import "./game.scss";
 
@@ -33,6 +34,7 @@ const GamePage = ({ history, location }) => {
     enemy: false
   });
 
+  // Nickname validation effect
   useEffect(() => {
     if (nickname) {
       socket = socketIOClient(serverUrl);
@@ -46,10 +48,12 @@ const GamePage = ({ history, location }) => {
     }
   }, []);
 
+  // Change rest of ships count for user
   useEffect(() => {
     setMaxShips(10 - ships.length);
   }, [ships]);
 
+  // Warning alert effect to hide it after 2 seconds
   useEffect(() => {
     if (warningAlert) {
       warningTimeout = setTimeout(() => {
@@ -60,6 +64,7 @@ const GamePage = ({ history, location }) => {
     }
   }, [warningAlert]);
 
+  // All socket handlers
   useEffect(() => {
     socket.on("gameSearchComplete", gameData => {
       setGameIsSearching(false);
@@ -77,7 +82,6 @@ const GamePage = ({ history, location }) => {
     socket.on(
       "shipWasShooted",
       ({ shootedShip, shooter, gameWinner = null }) => {
-        console.log("GAME WINNER", gameWinner);
         if (shooter.nickname === nickname) {
           setEnemyShips([...enemyShips, shootedShip]);
         } else {
@@ -100,6 +104,8 @@ const GamePage = ({ history, location }) => {
     socket.on("shotMissed", ({ gameData, blockId, shooter }) => {
       if (shooter.nickname === nickname) {
         setEnemyShips([...enemyShips, { blockId }]);
+      } else {
+        setShips([...ships, { blockId, isMissed: true }]);
       }
       setGameData(gameData);
     });
@@ -127,12 +133,7 @@ const GamePage = ({ history, location }) => {
 
       const { user } = gameData.users.find(u => u.attacks);
       if (user.nickname === nickname) {
-        if (enemyShips.find(i => i.blockId === blockId)) {
-          setEnemyShips(enemyShips.filter(i => i.blockId !== blockId));
-        } else {
-          socket.emit("setAttack", { gameId: gameData.id, blockId });
-          // setEnemyShips([...enemyShips, { blockId }]);
-        }
+        socket.emit("setAttack", { gameId: gameData.id, blockId });
       }
     }
   };
@@ -147,9 +148,9 @@ const GamePage = ({ history, location }) => {
       enemy: isReadyStatus.enemy
     });
   };
-  console.log(gameData);
+
   return (
-    <>
+    <Container>
       <GameSearchPreloader
         show={
           gameIsSearching ||
@@ -161,137 +162,123 @@ const GamePage = ({ history, location }) => {
             : "Searching for a game..."
         }
       />
-      <Container>
-        <Row>
-          <Col>
-            {gameData && !gameData.isStarted && isReadyStatus.enemy && (
-              <h1>Enemy is ready</h1>
-            )}
-            {gameData && gameData.isStarted && <h1>GAME IS STARTED</h1>}
-          </Col>
-        </Row>
-        <Row className="game-buttons">
-          <Col>
-            <Button onClick={handleReadyForAGame} outline color="success">
-              Ready
-            </Button>
-          </Col>
-        </Row>
-        <Row>
-          <Col className="game-area-col">
-            {/** User ships */}
-            <div id="gameArea" className="game-area">
-              {gameAreaRows.map((row, rowIndex) => {
-                return (
-                  <div key={row.id} className="area-row">
-                    <div className="area-row-name">{row.id}</div>
-                    {gameAreaCols.map((col, colIndex) => {
-                      const blockId = `${row.id}-${col.id}`;
-                      return (
-                        <div
-                          onClick={() => handleBlockClick(blockId)}
-                          key={blockId}
-                          id={blockId}
-                          className="area-col"
-                        >
-                          {ships.find(i => i.blockId === blockId) && (
-                            <div
-                              id={ships.find(i => i.blockId === blockId).shipId}
-                              onDragStart={() => false}
-                              className={`ship my-ship ${
-                                ships.find(
-                                  i => i.blockId === blockId && i.isShooted
-                                )
-                                  ? "shooted"
-                                  : ""
-                              }`}
-                            />
-                          )}
-                          {rowIndex === 0 && (
-                            <div className="area-col-name">
-                              {gameAreaCols[colIndex].id}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </Col>
+      <Row>
+        <Col>
+          {gameData && !gameData.isStarted && isReadyStatus.enemy && (
+            <h1>Enemy is ready</h1>
+          )}
+          {gameData && gameData.isStarted && <h1>GAME IS STARTED</h1>}
+        </Col>
+      </Row>
+      <Row className="game-buttons">
+        <Col>
+          <Button onClick={handleReadyForAGame} outline color="success">
+            Ready
+          </Button>
+        </Col>
+      </Row>
+      <Row>
+        {/** User ships */}
+        <Col className="game-area-col">
+          <span className="area-name">Your area</span>
+          <div
+            id="gameArea"
+            className={`game-area ${
+              gameData && gameData.isStarted ? "disabled-area" : ""
+            }`}
+          >
+            {gameAreaRows.map((row, rowIndex) => {
+              return (
+                <div key={row.id} className="area-row">
+                  <div className="area-row-name">{row.id}</div>
+                  {gameAreaCols.map((col, colIndex) => {
+                    const blockId = `${row.id}-${col.id}`;
+                    return (
+                      <Ship
+                        key={blockId}
+                        coordinates={{ rowIndex, colIndex }}
+                        blockId={blockId}
+                        handleClick={() => handleBlockClick(blockId)}
+                        ship={ships.find(i => i.blockId === blockId)}
+                        isShooted={ships.find(
+                          i => i.blockId === blockId && i.isShooted
+                        )}
+                        isMissed={ships.find(
+                          i => i.blockId === blockId && i.isMissed
+                        )}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </Col>
 
-          <Col className="game-area-col">
-            {/** Enemy ships */}
-            <div id="enemyArea" className="game-area">
-              {gameAreaRows.map((row, rowIndex) => {
-                return (
-                  <div key={row.id} className="area-row">
-                    <div className="area-row-name">{row.id}</div>
-                    {gameAreaCols.map((col, colIndex) => {
-                      const blockId = `${row.id}-${col.id}`;
-                      return (
-                        <div
-                          onClick={() => handleBlockClick(blockId, "enemy")}
-                          key={blockId}
-                          id={blockId}
-                          className="area-col"
-                        >
-                          {enemyShips.find(i => i.blockId === blockId) && (
-                            <div
-                              id={
-                                enemyShips.find(i => i.blockId === blockId)
-                                  .shipId
-                              }
-                              onDragStart={() => false}
-                              className={`ship enemy-ship ${
-                                enemyShips.find(
-                                  i => i.blockId === blockId && i.isShooted
-                                )
-                                  ? "shooted"
-                                  : ""
-                              }`}
-                            />
-                          )}
-                          {rowIndex === 0 && (
-                            <div className="area-col-name">
-                              {gameAreaCols[colIndex].id}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </Col>
-        </Row>
-        <Row>{maxShips}</Row>
-        <Row>Nickname - {nickname}</Row>
-        <Row>
-          Socket status -{" "}
-          {socketStatus ? "Sockets works" : "Sockets are not working"}
-        </Row>
+        {/** Enemy ships */}
+        <Col className="game-area-col">
+          <span className="area-name">Enemy area</span>
+          <div
+            id="enemyArea"
+            className={`game-area ${
+              gameData &&
+              (!gameData.isStarted ||
+                (gameData.isStarted &&
+                  !gameData.users.find(({ user }) => user.nickname === nickname)
+                    .attacks))
+                ? "disabled-area"
+                : ""
+            }`}
+          >
+            {gameAreaRows.map((row, rowIndex) => {
+              return (
+                <div key={row.id} className="area-row">
+                  <div className="area-row-name">{row.id}</div>
+                  {gameAreaCols.map((col, colIndex) => {
+                    const blockId = `${row.id}-${col.id}`;
+                    return (
+                      <Ship
+                        key={blockId}
+                        coordinates={{ rowIndex, colIndex }}
+                        blockId={blockId}
+                        handleClick={() => handleBlockClick(blockId, "enemy")}
+                        ship={enemyShips.find(i => i.blockId === blockId)}
+                        isShooted={enemyShips.find(
+                          i => i.blockId === blockId && i.isShooted
+                        )}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </Col>
+      </Row>
+      <Row>{maxShips}</Row>
+      <Row>Your Nickname - {nickname}</Row>
+      <Row>
+        Socket status -{" "}
+        {socketStatus ? "Sockets works" : "Sockets are not working"}
+      </Row>
+      <Alert
+        className="ships-warning-alert"
+        isOpen={warningAlert !== ""}
+        color="danger"
+      >
+        {warningAlert}
+      </Alert>
+      {gameData && (
         <Alert
           className="ships-warning-alert"
-          isOpen={warningAlert !== ""}
-          color="danger"
+          isOpen={gameData && gameData.isComplete && gameData.winner !== null}
+          color="success"
         >
-          {warningAlert}
+          Game is over! The winner is
+          {gameData.winner && gameData.winner.nickname}!
         </Alert>
-        {gameData && (
-          <Alert
-            className="ships-warning-alert"
-            isOpen={gameData && gameData.isComplete && gameData.winner !== null}
-            color="success"
-          >
-            Game is over! The winner is
-            {gameData.winner && gameData.winner.nickname}!
-          </Alert>
-        )}
-      </Container>
-    </>
+      )}
+    </Container>
   );
 };
 
