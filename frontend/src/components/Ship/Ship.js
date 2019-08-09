@@ -15,8 +15,8 @@ const Ship = ({
     <div onClick={handleClick} id={blockId} className="area-col">
       <CSSTransition
         in={ship !== undefined}
-        timeout={500}
-        classNames="fadeInOut"
+        timeout={250}
+        classNames="fadeIn250"
         unmountOnExit
       >
         <div

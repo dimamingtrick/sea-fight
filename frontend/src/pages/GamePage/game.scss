@@ -118,6 +118,14 @@
   }
 }
 
+.user-ready-alert {
+  position: fixed!important;
+  right: 0;
+  border-top-right-radius: 0!important;
+  border-bottom-right-radius: 0!important;
+  top: 25%;
+}
+
 .alert.ships-warning-alert {
   position: fixed;
   right: 25px;

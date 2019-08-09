@@ -8,7 +8,7 @@ import {
   FormText,
   Input,
   Label,
-  Button,
+  Button
 } from "reactstrap";
 
 import { connectToGameRequest } from "../../services";
@@ -27,10 +27,7 @@ const PlayerDetailsPage = ({ history }) => {
     e.preventDefault();
     setLoading(true);
     connectToGameRequest(nickname)
-      .then(() => {
-        localStorage.setItem("nickname", nickname);
-        history.push("/game", { nickname });
-      })
+      .then(() => history.push("/game", { nickname }))
       .catch(err => {
         setError(err.message);
         setLoading(false);

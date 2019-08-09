@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Alert, Button } from "reactstrap";
+import { CSSTransition } from "react-transition-group";
 import socketIOClient from "socket.io-client";
 
 import GameSearchPreloader from "../../components/GameSearchPreloader/GameSearchPreloader";
@@ -8,7 +9,6 @@ import { gameAreaRows, gameAreaCols } from "../../helpers";
 import "./game.scss";
 
 let socket = null;
-const serverUrl = `${process.env.REACT_APP_SERVER}/`;
 
 let warningTimeout;
 
@@ -16,13 +16,7 @@ let warningTimeout;
  * GAME COMPONENT
  */
 const GamePage = ({ history, location }) => {
-  const [nickname] = useState(
-    localStorage.getItem("nickname")
-      ? localStorage.getItem("nickname")
-      : location.state.nickname
-  );
-
-  const [socketStatus, setSocketStatus] = useState(false);
+  const [nickname, setNickname] = useState("");
   const [gameIsSearching, setGameIsSearching] = useState(true);
   const [gameData, setGameData] = useState(null);
   const [ships, setShips] = useState([]);
@@ -36,12 +30,14 @@ const GamePage = ({ history, location }) => {
 
   // Nickname validation effect
   useEffect(() => {
-    if (nickname) {
-      socket = socketIOClient(serverUrl);
-      socket.on("socketWorks", ({ horray }) => {
-        socket.emit("userIsOnline", nickname);
-        setSocketStatus(true);
-        socket.emit("search-game");
+    if (location.state && location.state.nickname) {
+      const nickname = location.state.nickname;
+      setNickname(nickname);
+      socket = socketIOClient(`${process.env.REACT_APP_SERVER}/`);
+      socket.emit("userIsOnline", nickname);
+      socket.emit("search-game", nickname);
+      socket.on("socketWorks", () => {
+        console.log("Sockets works"); //
       });
     } else {
       history.push("/");
@@ -50,7 +46,7 @@ const GamePage = ({ history, location }) => {
 
   // Change rest of ships count for user
   useEffect(() => {
-    setMaxShips(10 - ships.length);
+    if (10 - ships.length >= 0) setMaxShips(10 - ships.length);
   }, [ships]);
 
   // Warning alert effect to hide it after 2 seconds
@@ -69,6 +65,9 @@ const GamePage = ({ history, location }) => {
     socket.on("gameSearchComplete", gameData => {
       setGameIsSearching(false);
       setGameData(gameData);
+    });
+    socket.on("enemyDisconnects", () => {
+      console.log("DISCONNECT FUCKING ENEMY");
     });
     socket.on("enemyIsReady", () => {
       setIsReadyStatus({
@@ -107,10 +106,11 @@ const GamePage = ({ history, location }) => {
       } else {
         setShips([...ships, { blockId, isMissed: true }]);
       }
-      setGameData(gameData);
+      setGameData(gameData); //sadasdasdas
     });
     return () => {
       socket.off("gameSearchComplete");
+      socket.off("enemyDisconnects");
       socket.off("enemyIsReady");
       socket.off("gameStarted");
       socket.off("shipWasShooted");
@@ -149,6 +149,10 @@ const GamePage = ({ history, location }) => {
     });
   };
 
+  const enemy =
+    gameData &&
+    gameData.users.find(({ user }) => user.nickname !== nickname).user;
+
   return (
     <Container>
       <GameSearchPreloader
@@ -162,21 +166,15 @@ const GamePage = ({ history, location }) => {
             : "Searching for a game..."
         }
       />
+
+      {/** Game gata */}
+      <Row>Ships - {maxShips}</Row>
+      {gameData && <Row>Enemy - {gameData && enemy.nickname}</Row>}
+
       <Row>
-        <Col>
-          {gameData && !gameData.isStarted && isReadyStatus.enemy && (
-            <h1>Enemy is ready</h1>
-          )}
-          {gameData && gameData.isStarted && <h1>GAME IS STARTED</h1>}
-        </Col>
+        <Col>{gameData && gameData.isStarted && <h1>GAME IS STARTED</h1>}</Col>
       </Row>
-      <Row className="game-buttons">
-        <Col>
-          <Button onClick={handleReadyForAGame} outline color="success">
-            Ready
-          </Button>
-        </Col>
-      </Row>
+
       <Row>
         {/** User ships */}
         <Col className="game-area-col">
@@ -255,12 +253,30 @@ const GamePage = ({ history, location }) => {
           </div>
         </Col>
       </Row>
-      <Row>{maxShips}</Row>
-      <Row>Your Nickname - {nickname}</Row>
-      <Row>
-        Socket status -{" "}
-        {socketStatus ? "Sockets works" : "Sockets are not working"}
-      </Row>
+
+      <CSSTransition
+        in={maxShips === 0 && (gameData && !gameData.isStarted)}
+        timeout={250}
+        classNames="fadeIn250"
+        unmountOnExit
+      >
+        <Row className="game-buttons">
+          <Col>
+            <Button onClick={handleReadyForAGame} outline color="success">
+              Ready
+            </Button>
+          </Col>
+        </Row>
+      </CSSTransition>
+
+      {/** All alerts */}
+      <Alert
+        className="user-ready-alert"
+        isOpen={gameData && !gameData.isStarted && isReadyStatus.enemy}
+        color="warning"
+      >
+        Enemy is ready
+      </Alert>
       <Alert
         className="ships-warning-alert"
         isOpen={warningAlert !== ""}

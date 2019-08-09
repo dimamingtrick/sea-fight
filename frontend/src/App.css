@@ -19,3 +19,18 @@ small.error-message {
   margin: 0 0 15px 0;
   font-size: 15px;
 }
+
+.fadeIn250-enter {
+  opacity: 0;
+}
+.fadeIn250-enter-active {
+  opacity: 1;
+  transition: opacity 250ms;
+}
+.fadeIn250-exit {
+  opacity: 1;
+}
+.fadeIn250-exit-active {
+  opacity: 0;
+  transition: opacity 250ms;
+}

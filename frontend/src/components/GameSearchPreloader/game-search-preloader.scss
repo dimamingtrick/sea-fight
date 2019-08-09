@@ -22,7 +22,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1000;
+  z-index: 1001;
 }
 
 .black-bg {
@@ -39,7 +39,8 @@
   padding: 25px;
   padding-top: 35px;
   background: rgba(255,255,255,.25);
-  border-radius: 20px;
+	border-radius: 20px;
+	border: 1px solid rgba(255, 255, 255, .75);
 
   span {
     color: #fff;
